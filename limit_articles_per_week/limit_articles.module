@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Contains limit_articles_per_week.module.
+ */
+
+function limit_articles_per_week_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id)
+{
+    // check if user is about to create new node of type page. Not called on edit
+    if ($form_id == 'node_article_form') {
+        $form['#validate'][] = '_node_page_form_custom_validate';
+    }
+}
+
+function _node_page_form_custom_validate(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+
+    // return if is admin
+    $groups = \Drupal::currentUser()->getRoles();
+    foreach($groups as $group) {
+        if($group == 'administrator')
+            return true;
+    }
+
+    // get current user id
+    $user_uid = \Drupal::currentUser()->id();
+
+    // count number of nodes created by current user in last week
+    $query = \Drupal::entityQuery('node');
+    $query->condition('type', array('article'), 'IN'); // Limit the type of node to check
+    $query->condition('uid', $user_uid);
+
+    $first_day_of_week = strtotime('Last Monday'); // choose the day you define as First day of week
+    $last_day_of_week = strtotime('Next Monday');
+    $query->condition('created', array($first_day_of_week, $last_day_of_week), 'BETWEEN');
+
+    $count = $query->count()->execute();
+
+    // if number of posts reachs limit, stop the form from saving data
+    if($count >= 3) {
+        $form_state->setErrorByName('', t('You have reached the limit of @count articles this week.', array('@count' => $count)));
+    }
+
+    \Drupal\limit_articles\Controller\RedirectsController::redirect_member;
+}

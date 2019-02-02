@@ -1,0 +1,1 @@
+limit_articles.redirect:  path: '/path-you-want-to-redirect'  defaults:    _controller: '\Drupal\limit_articles_per_week\Controller\RedirectsController::redirect_member'    _title: 'Title here'  requirements:    _permission: 'access content'
